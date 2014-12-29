@@ -499,6 +499,7 @@ class DiffMarker(object):
         except IndexError:
             max1 = max2 = 0
         num_width = max(len(str(max1)), len(str(max2)))
+        num_width = max(3, num_width)
 
         # Set up line width
         if width <= 0:
@@ -520,16 +521,43 @@ class DiffMarker(object):
             right_num_fmt + ' %(right)s\n'
 
         # yield header, old path and new path
-        for line in diff._headers:
-            yield self._markup_header(line)
-        yield self._markup_old_path(diff._old_path)
-        yield self._markup_new_path(diff._new_path)
+        #for line in diff._headers:
+        #    yield self._markup_header(line)
+        #yield self._markup_old_path(diff._old_path)
+        #yield self._markup_new_path(diff._new_path)
+
+        old_path = diff._old_path[6:].rstrip()
+        new_path = diff._new_path[6:].rstrip()
+
+        yield ' ' + '-' * (width + num_width) + '-' + '-' * (width + num_width-2) + '\n'
+        #yield '\n\n'
+
+        change_type = 'M'
+        if old_path != new_path:
+            change_type = '~'
+            if old_path == 'ev/null':
+                change_type = '+'
+                old_path = ''
+            elif new_path == 'ev/null':
+                change_type = '-'
+                new_path = ''
+
+        file_header_fmt = ' ' * (num_width+1) + '%(left)s ' + COLORS['reset'] + change_type + ' ' * (num_width) + ' %(right)s\n'
+
+        yield file_header_fmt % {
+            'left_num': '',
+            'left': old_path + ' ' * (width - len(old_path) - 1),
+            'right_num': '',
+            'right': new_path + ' ' * (width - len(new_path) - 6)
+        }
+
+        yield ' ' + '-' * (width + num_width) + '-' + '-' * (width + num_width-2) + '\n'
 
         # yield hunks
         for hunk in diff._hunks:
             for hunk_header in hunk._hunk_headers:
                 yield self._markup_hunk_header(hunk_header)
-            yield self._markup_hunk_meta(hunk._hunk_meta)
+            #yield self._markup_hunk_meta(hunk._hunk_meta)
             for old, new, changed in hunk.mdiff():
                 if old[0]:
                     left_num = str(hunk._old_addr[0] + int(old[0]) - 1)
